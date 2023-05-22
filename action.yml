@@ -1,0 +1,20 @@
+name: '"Pause, debug and resume GitHub Actions jobs" Action For GitHub Actions"'
+description: "Download and start breakpoint in your GitHub Actions workflow."
+inputs:
+  endpoint:
+    description: "The endpoint of a breakpoint rendezvous server."
+    required: true
+    default: "breakpoint.namespace.so:5000"
+  duration:
+    description: "The initial breakpoint duration."
+    required: true
+    default: "30m"
+  authorized-users:
+    description: "The comma-separated list of authorized GitHub users."
+    required: false
+  authorized-keys:
+    description: "The comma-separated list of authorized SSH keys."
+    required: false
+runs:
+  using: node16
+  main: dist/main/index.js

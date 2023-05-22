@@ -1,0 +1,24 @@
+name: Breakpoint test
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  breakpoint:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+      - name: Execute breakpoint
+        uses: ./
+        with:
+          duration: 2m
+          authorized-users: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
