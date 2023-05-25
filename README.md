@@ -34,8 +34,35 @@ to a GitHub Runner. The action will fail if neither `authorized-users` nor
 
 # Usage
 
-These examples show how you can define a step in a workflow job. The action can
-pause workflow jobs at any step:
+The following example shows how to define a step in a GitHub Actions job to run
+`breakpoint` in case of job's failure (so it won't pause successful runs):
+
+```yaml
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Run tests
+        shell: bash
+        run: ...
+
+      - name: Breakpoint if tests failed
+        if: failure()
+        uses: namespacelabs/breakpoint-action@v0
+        with:
+          duration: 30m
+          authorized-users: jack123, alice321
+```
+
+Or it can pause workflow jobs at any step:
 
 ```yaml
 jobs:
@@ -63,32 +90,4 @@ jobs:
       - name: Run tests
         shell: bash
         run: ...
-```
-
-Or it can be use to pause workflow jobs only on failures (so it won't pause
-successful runs):
-
-```yaml
-jobs:
-  tests:
-    runs-on: ubuntu-latest
-
-    permissions:
-      id-token: write
-      contents: read
-
-    steps:
-      - name: Checkout the repository
-        uses: actions/checkout@v3
-
-      - name: Run tests
-        shell: bash
-        run: ...
-
-      - name: Breakpoint if tests failed
-        if: failure()
-        uses: namespacelabs/breakpoint-action@v0
-        with:
-          duration: 30m
-          authorized-users: jack123, alice321
 ```
