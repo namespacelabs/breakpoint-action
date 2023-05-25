@@ -4,7 +4,7 @@ inputs:
   endpoint:
     description: "The endpoint of a breakpoint rendezvous server."
     required: true
-    default: "breakpoint.namespace.so:5000"
+    default: "rendezvous.namespace.so:5000"
   duration:
     description: "The initial breakpoint duration."
     required: true
