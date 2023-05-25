@@ -15,6 +15,9 @@ inputs:
   authorized-keys:
     description: "The comma-separated list of authorized SSH keys."
     required: false
+  webhook-definition:
+    description: "The path to a webhook definition file."
+    required: false
 runs:
   using: node16
   main: dist/main/index.js

@@ -12,6 +12,12 @@ class WaitConfig {
 	authorized_github_users: string[];
 	shell: string[];
 	allowed_ssh_users: string[];
+	webhook: string[];
+}
+
+class Webhook {
+	url: string;
+	payload: any;
 }
 
 async function run(): Promise<void> {
@@ -138,6 +144,12 @@ function jsonifyInput(): string {
 
 	if (!authorized) {
 		throw new Error("Neither 'authorized-users' nor 'authorized-keys' is provded.");
+	}
+
+	const webhookDefFile: string = core.getInput("webhook-definition");
+	if (Boolean(webhookDefFile)) {
+		const webhookDef: string = fs.readFileSync(webhookDefFile, "utf8");
+		config.webhooks = [JSON.parse(webhookDef)];
 	}
 
 	return JSON.stringify(config);

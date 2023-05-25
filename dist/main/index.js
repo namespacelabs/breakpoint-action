@@ -42969,6 +42969,8 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 class WaitConfig {
 }
+class Webhook {
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -43080,6 +43082,11 @@ function jsonifyInput() {
     }
     if (!authorized) {
         throw new Error("Neither 'authorized-users' nor 'authorized-keys' is provded.");
+    }
+    const webhookDefFile = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("webhook-definition");
+    if (Boolean(webhookDefFile)) {
+        const webhookDef = fs__WEBPACK_IMPORTED_MODULE_3__.readFileSync(webhookDefFile, "utf8");
+        config.webhooks = [JSON.parse(webhookDef)];
     }
     return JSON.stringify(config);
 }
