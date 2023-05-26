@@ -18,6 +18,9 @@ inputs:
   webhook-definition:
     description: "The path to a webhook definition file."
     required: false
+  slack-announce-channel:
+    description: "A slack channel where webhook sends notifications."
+    required: false
 runs:
   using: node16
   main: dist/main/index.js

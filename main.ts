@@ -12,12 +12,17 @@ class WaitConfig {
 	authorized_github_users: string[];
 	shell: string[];
 	allowed_ssh_users: string[];
-	webhook: string[];
+	webhook: Webhook[];
+	slack_bot: SlackBot;
 }
 
 class Webhook {
 	url: string;
 	payload: any;
+}
+
+class SlackBot {
+	channel: string;
 }
 
 async function run(): Promise<void> {
@@ -150,6 +155,12 @@ function jsonifyInput(): string {
 	if (Boolean(webhookDefFile)) {
 		const webhookDef: string = fs.readFileSync(webhookDefFile, "utf8");
 		config.webhooks = [JSON.parse(webhookDef)];
+	}
+
+	const slackChannel: string = core.getInput("slack-announce-channel");
+	if (Boolean(slackChannel)) {
+		const slackBot: SlackBot = { channel: slackChannel };
+		config.slack_bot = slackBot;
 	}
 
 	return JSON.stringify(config);

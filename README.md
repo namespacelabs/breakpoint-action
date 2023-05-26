@@ -26,7 +26,7 @@ This action offers inputs that you can use to configure  `breakpoint` behavior:
   `url` and `payload` fields. If webhook definition is provided `breakpoint`
   will send `POST` request to the provided `url` with the provided `payload`.
   Example of such definition file can be found
-  [here](/.github/actions/breakpoint-webhook-definition.json).
+  [here](/.github/breakpoint-webhook-definition.json).
 
 Note, that `authorized-users` and `authorized-keys` used to provided SSH access
 to a GitHub Runner. The action will fail if neither `authorized-users` nor

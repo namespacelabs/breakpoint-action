@@ -24,4 +24,4 @@ jobs:
         with:
           duration: 2m
           authorized-users: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
-          webhook-definition: ./.github/actions/breakpoint-webhook-definition.json
+          webhook-definition: ./.github/breakpoint-webhook-definition.json

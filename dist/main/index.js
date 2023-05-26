@@ -42971,6 +42971,8 @@ class WaitConfig {
 }
 class Webhook {
 }
+class SlackBot {
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -43087,6 +43089,11 @@ function jsonifyInput() {
     if (Boolean(webhookDefFile)) {
         const webhookDef = fs__WEBPACK_IMPORTED_MODULE_3__.readFileSync(webhookDefFile, "utf8");
         config.webhooks = [JSON.parse(webhookDef)];
+    }
+    const slackChannel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("slack-announce-channel");
+    if (Boolean(slackChannel)) {
+        const slackBot = { channel: slackChannel };
+        config.slack_bot = slackBot;
     }
     return JSON.stringify(config);
 }
