@@ -1,5 +1,5 @@
-name: '"Pause, debug and resume GitHub Actions jobs" Action For GitHub Actions"'
-description: "Download and start breakpoint in your GitHub Actions workflow."
+name: 'Breakpoint'
+description: 'Pause, debug with SSH and resume GitHub Actions'
 author: 'Namespace Labs'
 branding:
   icon: 'pause-circle'
