@@ -1,4 +1,4 @@
-name: 'Breakpoint'
+name: 'Add a breakpoint to CI'
 description: 'Pause, debug with SSH and resume GitHub Actions'
 author: 'Namespace Labs'
 branding:
