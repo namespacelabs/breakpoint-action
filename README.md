@@ -7,11 +7,12 @@ This action offers inputs that you can use to configure  `breakpoint` behavior:
 
 * `endpoint` - is the quic endpoint of a breakpoint rendezvous server. This is
   the required parameter and by default the action will use [Namespace](https://namespace.so)
-  managed server - `breakpoint.namespace.so:5000`.
+  managed server - `rendezvous.namespace.so:5000`.
 
 * `duration` - is the initial duration of a breakpoint started by the action.
   A duration string is a possibly sequence of decimal numbers a unit suffix,
   such as "30s" or "2h5m". Valid time units are "ns", "us", "ms", "s", "m", "h".
+
   The default value is "30m".
 
 * `authorized-users` - is the comma-separated list of GitHub users that would be
@@ -25,8 +26,16 @@ This action offers inputs that you can use to configure  `breakpoint` behavior:
 * `webhook-definition` - is the path to a webhook definition file that contains
   `url` and `payload` fields. If webhook definition is provided `breakpoint`
   will send `POST` request to the provided `url` with the provided `payload`.
-  Example of such definition file can be found
-  [here](/.github/breakpoint-webhook-definition.json).
+
+  Example of such definition file for sending notifications to Slack can be
+  found [here](/.github/slack-notification.json).
+
+* `slack-announce-channel` - is a Slack channel where webhook sends and updates
+  messages about started and currently active breakpoints.
+
+  To use this feature necessary to provide `SLACK_BOT_TOKEN` environment
+  variable. See [here](https://api.slack.com/authentication/token-types) how to
+  create a bot token.
 
 Note, that `authorized-users` and `authorized-keys` used to provided SSH access
 to a GitHub Runner. The action will fail if neither `authorized-users` nor

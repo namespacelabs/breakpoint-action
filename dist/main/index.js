@@ -43092,7 +43092,10 @@ function jsonifyInput() {
     }
     const slackChannel = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("slack-announce-channel");
     if (Boolean(slackChannel)) {
-        const slackBot = { channel: slackChannel };
+        const slackBot = {
+            channel: slackChannel,
+            token: "${SLACK_BOT_TOKEN}",
+        };
         config.slack_bot = slackBot;
     }
     return JSON.stringify(config);

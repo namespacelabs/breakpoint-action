@@ -23,6 +23,7 @@ class Webhook {
 
 class SlackBot {
 	channel: string;
+	token: string;
 }
 
 async function run(): Promise<void> {
@@ -159,7 +160,10 @@ function jsonifyInput(): string {
 
 	const slackChannel: string = core.getInput("slack-announce-channel");
 	if (Boolean(slackChannel)) {
-		const slackBot: SlackBot = { channel: slackChannel };
+		const slackBot: SlackBot = {
+			channel: slackChannel,
+			token: "${SLACK_BOT_TOKEN}",
+		};
 		config.slack_bot = slackBot;
 	}
 
