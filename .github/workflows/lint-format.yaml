@@ -13,6 +13,6 @@ jobs:
         with:
           # This should match the using value in `actions.yaml`
           node-version: 16
-      - run: yarn install
-      - run: yarn run lint
-      - run: yarn run format-check
+      - run: npm install
+      - run: npm run lint
+      - run: npm run format-check

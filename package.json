@@ -13,7 +13,7 @@
 		"format": "prettier --write '**/*.ts'",
 		"format-check": "prettier --check '**/*.ts'",
 		"lint": "eslint *.ts",
-		"build": "concurrently 'yarn build:main'",
+		"build": "concurrently 'npm run build:main'",
 		"build:main": "ncc build main.ts --out dist/main",
 		"add": "git add dist/*"
 	},
