@@ -6,7 +6,7 @@ jobs:
   lint-format:
     permissions:
       contents: read
-    runs-on: ubuntu-latest
+    runs-on: nscloud-ubuntu-22.04-amd64-2x8
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3

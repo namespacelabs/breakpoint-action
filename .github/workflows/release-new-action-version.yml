@@ -17,7 +17,7 @@ permissions:
 jobs:
   update_tag:
     name: Update the major tag to include the ${{ github.event.inputs.TAG_NAME || github.event.release.tag_name }} changes
-    runs-on: ubuntu-latest
+    runs-on: nscloud-ubuntu-22.04-amd64-2x4
     steps:
       - name: Update the ${{ env.TAG_NAME }} tag
         uses: actions/publish-action@v0.2.2
