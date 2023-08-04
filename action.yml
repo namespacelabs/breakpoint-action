@@ -25,6 +25,10 @@ inputs:
   slack-announce-channel:
     description: "A slack channel where webhook sends notifications."
     required: false
+  shell:
+    description: "The path of the login shell."
+    required: false
+    default: "/bin/bash"
 runs:
   using: node16
   main: dist/main/index.js

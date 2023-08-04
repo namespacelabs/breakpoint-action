@@ -43068,7 +43068,7 @@ function jsonifyInput() {
     let config = {
         endpoint: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("endpoint"),
         duration: _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("duration"),
-        shell: ["/bin/bash"],
+        shell: [_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("shell")],
         allowed_ssh_users: ["runner"],
     };
     let authorized = false;
