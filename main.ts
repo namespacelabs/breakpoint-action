@@ -131,7 +131,7 @@ function jsonifyInput(): string {
 	let config: any = {
 		endpoint: core.getInput("endpoint"),
 		duration: core.getInput("duration"),
-		shell: ["/bin/bash"],
+		shell: [core.getInput("shell")],
 		allowed_ssh_users: ["runner"],
 	};
 

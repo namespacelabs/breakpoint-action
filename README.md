@@ -107,6 +107,9 @@ This action offers inputs that you can use to configure  `breakpoint` behavior:
   To use this feature necessary to provide `SLACK_BOT_TOKEN` environment
   variable. See [here](https://api.slack.com/authentication/token-types) how to
   create a bot token.
+* `shell` - is the path to the login shell.
+
+  The default value is "/bin/bash".
 
 Note, that `authorized-users` and `authorized-keys` used to provided SSH access
 to a GitHub Runner. The action will fail if neither `authorized-users` nor
