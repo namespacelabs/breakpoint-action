@@ -8,7 +8,7 @@ on:
 
 jobs:
   breakpoint:
-    runs-on: nscloud-ubuntu-22.04-amd64-2x4
+    runs-on: nscloud-ubuntu-22.04-staging-amd64-2x4
 
     permissions:
       id-token: write
