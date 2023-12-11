@@ -138,13 +138,13 @@ function jsonifyInput(): string {
 	let authorized: Boolean = false;
 	const authorizedUsers: string = core.getInput("authorized-users");
 	if (Boolean(authorizedUsers)) {
-		config.authorized_github_users = authorizedUsers.split(",").filter(u => String(u).trim());;;
+		config.authorized_github_users = authorizedUsers.split(",").filter((u) => String(u).trim());
 		authorized = true;
 	}
 
 	const authorizedKeys: string = core.getInput("authorized-keys");
 	if (Boolean(authorizedKeys)) {
-		config.authorized_keys = authorizedKeys.split(",").filter(k => String(k).trim());;
+		config.authorized_keys = authorizedKeys.split(",").filter((k) => String(k).trim());
 		authorized = true;
 	}
 
