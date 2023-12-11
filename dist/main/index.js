@@ -43074,12 +43074,12 @@ function jsonifyInput() {
     let authorized = false;
     const authorizedUsers = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("authorized-users");
     if (Boolean(authorizedUsers)) {
-        config.authorized_github_users = authorizedUsers.split(",").filter((u) => String(u).trim());
+        config.authorized_github_users = authorizedUsers.split(",").map((u) => String(u).trim());
         authorized = true;
     }
     const authorizedKeys = _actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput("authorized-keys");
     if (Boolean(authorizedKeys)) {
-        config.authorized_keys = authorizedKeys.split(",").filter((k) => String(k).trim());
+        config.authorized_keys = authorizedKeys.split(",").map((k) => String(k).trim());
         authorized = true;
     }
     if (!authorized) {
