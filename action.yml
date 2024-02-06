@@ -30,5 +30,5 @@ inputs:
     required: false
     default: "/bin/bash"
 runs:
-  using: node16
+  using: node20
   main: dist/main/index.js
