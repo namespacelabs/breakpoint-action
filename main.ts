@@ -1,24 +1,25 @@
 import * as core from "@actions/core";
 import * as exec from "@actions/exec";
 import * as tc from "@actions/tool-cache";
-import * as fs from "fs";
-import * as path from "path";
-import { Octokit } from "octokit";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
-class WaitConfig {
+const breakpointVersion = "0.0.16";
+
+interface WaitConfig {
 	endpoint: string;
 	duration: string;
-	authorized_keys: string[];
-	authorized_github_users: string[];
+	authorized_keys?: string[];
+	authorized_github_users?: string[];
 	shell: string[];
 	allowed_ssh_users: string[];
-	webhook: Webhook[];
-	slack_bot: SlackBot;
+	webhooks?: Webhook[];
+	slack_bot?: SlackBot;
 }
 
 class Webhook {
 	url: string;
-	payload: any;
+	payload: unknown;
 }
 
 class SlackBot {
@@ -28,13 +29,8 @@ class SlackBot {
 
 async function run(): Promise<void> {
 	try {
-		await core.group(`Install breakpoint CLI`, async () => {
-			await installBreakpoint();
-		});
-
-		await core.group(`Execute breakpoint`, async () => {
-			await runBreakpoint();
-		});
+		await installBreakpoint();
+		await runBreakpoint();
 	} catch (err) {
 		core.setFailed(err.message);
 	}
@@ -64,9 +60,9 @@ async function runBreakpoint(): Promise<void> {
 
 	core.debug(`Configuration: ${configData}`);
 
-	fs.writeFile(configFile, configData, function (err) {
+	fs.writeFile(configFile, configData, (err) => {
 		if (err) {
-			core.setFailed("Failed to write config file: " + err.message);
+			core.setFailed(`Failed to write config file: ${err.message}`);
 			return;
 		}
 	});
@@ -103,47 +99,26 @@ async function getDownloadURL(): Promise<string> {
 			throw new Error(`Unsupported operating system: ${RUNNER_OS}`);
 	}
 
-	const octokit = new Octokit({});
-	const getReleaseURL = await octokit.rest.repos.getLatestRelease({
-		owner: "namespacelabs",
-		repo: "breakpoint",
-	});
-
-	if (!Boolean(getReleaseURL)) {
-		throw new Error(`Could not find a latest release for breakpoint.`);
-	}
-
-	core.info(`Breakpoint latest release: ${getReleaseURL}`);
-
-	const breakpointArchive = `breakpoint_${os}_${arch}.tar.gz`;
-	const asset = getReleaseURL.data.assets.find((obj) => {
-		return obj.name == breakpointArchive;
-	});
-
-	if (!Boolean(asset)) {
-		throw new Error("Could not find the breakpoint asset.");
-	}
-
-	return asset.url;
+	return `https://github.com/namespacelabs/breakpoint/releases/download/v${breakpointVersion}/breakpoint_${os}_${arch}.tar.gz`;
 }
 
 function jsonifyInput(): string {
-	let config: any = {
+	const config: WaitConfig = {
 		endpoint: core.getInput("endpoint"),
 		duration: core.getInput("duration"),
 		shell: [core.getInput("shell")],
 		allowed_ssh_users: ["runner"],
 	};
 
-	let authorized: Boolean = false;
+	let authorized = false;
 	const authorizedUsers: string = core.getInput("authorized-users");
-	if (Boolean(authorizedUsers)) {
+	if (authorizedUsers) {
 		config.authorized_github_users = authorizedUsers.split(",").map((u) => String(u).trim());
 		authorized = true;
 	}
 
 	const authorizedKeys: string = core.getInput("authorized-keys");
-	if (Boolean(authorizedKeys)) {
+	if (authorizedKeys) {
 		config.authorized_keys = authorizedKeys.split(",").map((k) => String(k).trim());
 		authorized = true;
 	}
@@ -153,13 +128,13 @@ function jsonifyInput(): string {
 	}
 
 	const webhookDefFile: string = core.getInput("webhook-definition");
-	if (Boolean(webhookDefFile)) {
+	if (webhookDefFile) {
 		const webhookDef: string = fs.readFileSync(webhookDefFile, "utf8");
 		config.webhooks = [JSON.parse(webhookDef)];
 	}
 
 	const slackChannel: string = core.getInput("slack-announce-channel");
-	if (Boolean(slackChannel)) {
+	if (slackChannel) {
 		const slackBot: SlackBot = {
 			channel: slackChannel,
 			token: "${SLACK_BOT_TOKEN}",
