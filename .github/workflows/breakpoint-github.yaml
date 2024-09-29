@@ -22,3 +22,22 @@ jobs:
           duration: 2m
           authorized-users: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
           webhook-definition: ./.github/slack-notification.json
+
+  breakpoint-mac:
+    runs-on: macos-14-xlarge
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+      - name: Execute breakpoint
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        uses: ./
+        with:
+          duration: 2m
+          authorized-users: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
+          webhook-definition: ./.github/slack-notification.json
