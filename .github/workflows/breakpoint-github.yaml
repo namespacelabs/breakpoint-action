@@ -2,6 +2,13 @@ name: Breakpoint test on GitHub
 
 on:
   workflow_dispatch:
+    notify-slack:
+      description: "Post a notification for the breakpoint on Slack"
+      required: false
+      type: boolean
+
+env:
+  AUTHORIZED_USERS: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
 
 jobs:
   breakpoint:
@@ -13,12 +20,22 @@ jobs:
 
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v3
-      - name: Execute breakpoint
+        uses: actions/checkout@v4
+
+      - name: Execute breakpoint with Slack notification
+        if: inputs.notify-slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         uses: ./
         with:
-          duration: 2m
-          authorized-users: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
+          duration: 5m
+          authorized-users: ${{ env.AUTHORIZED_USERS }}
           webhook-definition: ./.github/slack-notification.json
+
+      - name: Execute breakpoint
+        if: !inputs.notify-slack
+        uses: ./
+        with:
+          duration: 5m
+          authorized-users: ${{ env.AUTHORIZED_USERS }}
+  

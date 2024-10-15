@@ -16,12 +16,10 @@ jobs:
 
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+
       - name: Execute breakpoint
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         uses: ./
         with:
           duration: 2m
           authorized-users: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
-          webhook-definition: ./.github/slack-notification.json
