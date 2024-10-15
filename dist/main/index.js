@@ -6719,7 +6719,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 
-const breakpointVersion = "0.0.16";
+const breakpointVersion = "0.0.17";
 class Webhook {
 }
 class SlackBot {
