@@ -28,7 +28,6 @@ inputs:
   shell:
     description: "The path of the login shell."
     required: false
-    default: "/bin/bash"
 runs:
   using: node20
   main: dist/main/index.js

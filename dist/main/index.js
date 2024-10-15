@@ -6799,7 +6799,6 @@ function jsonifyInput() {
     const config = {
         endpoint: core.getInput("endpoint"),
         duration: core.getInput("duration"),
-        shell: [core.getInput("shell")],
         allowed_ssh_users: ["runner"],
     };
     let authorized = false;
@@ -6820,6 +6819,10 @@ function jsonifyInput() {
     if (webhookDefFile) {
         const webhookDef = external_node_fs_namespaceObject.readFileSync(webhookDefFile, "utf8");
         config.webhooks = [JSON.parse(webhookDef)];
+    }
+    const shell = core.getInput("shell");
+    if (shell) {
+        config.shell = [shell];
     }
     const slackChannel = core.getInput("slack-announce-channel");
     if (slackChannel) {

@@ -11,7 +11,7 @@ interface WaitConfig {
 	duration: string;
 	authorized_keys?: string[];
 	authorized_github_users?: string[];
-	shell: string[];
+	shell?: string[];
 	allowed_ssh_users: string[];
 	webhooks?: Webhook[];
 	slack_bot?: SlackBot;
@@ -106,7 +106,6 @@ function jsonifyInput(): string {
 	const config: WaitConfig = {
 		endpoint: core.getInput("endpoint"),
 		duration: core.getInput("duration"),
-		shell: [core.getInput("shell")],
 		allowed_ssh_users: ["runner"],
 	};
 
@@ -131,6 +130,11 @@ function jsonifyInput(): string {
 	if (webhookDefFile) {
 		const webhookDef: string = fs.readFileSync(webhookDefFile, "utf8");
 		config.webhooks = [JSON.parse(webhookDef)];
+	}
+
+	const shell: string = core.getInput("shell");
+	if (shell) {
+		config.shell = [shell];
 	}
 
 	const slackChannel: string = core.getInput("slack-announce-channel");
