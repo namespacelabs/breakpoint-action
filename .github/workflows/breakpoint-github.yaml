@@ -22,18 +22,7 @@ jobs:
       - name: Checkout the repository
         uses: actions/checkout@v4
 
-      - name: Execute breakpoint with Slack notification
-        if: inputs.notify-slack
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-        uses: ./
-        with:
-          duration: 5m
-          authorized-users: ${{ env.AUTHORIZED_USERS }}
-          webhook-definition: ./.github/slack-notification.json
-
       - name: Execute breakpoint
-        if: !inputs.notify-slack
         uses: ./
         with:
           duration: 5m
