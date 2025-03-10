@@ -1,0 +1,25 @@
+name: Breakpoint test on Namespace/MacOS
+
+on:
+  workflow_dispatch:
+
+env:
+  AUTHORIZED_USERS: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
+
+jobs:
+  breakpoint-mac:
+    runs-on: nscloud-macos-sequoia-arm64-12x28
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Execute breakpoint
+        uses: ./
+        with:
+          duration: 5m
+          authorized-users: ${{ env.AUTHORIZED_USERS }}
