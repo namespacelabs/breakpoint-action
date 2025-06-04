@@ -4,7 +4,7 @@ import * as tc from "@actions/tool-cache";
 import * as fs from "node:fs";
 import * as path from "node:path";
 
-const breakpointVersion = "0.0.20";
+const breakpointVersion = "0.0.21";
 
 interface WaitConfig {
 	endpoint: string;
