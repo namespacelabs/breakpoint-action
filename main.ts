@@ -138,6 +138,8 @@ function jsonifyInput(): string {
 	const shell: string = core.getInput("shell");
 	if (shell) {
 		config.shell = [shell];
+	} else if (process.env.RUNNER_OS === "Windows") {
+		config.shell = ["c:\\windows\\system32\\cmd.exe"];
 	}
 
 	const slackChannel: string = core.getInput("slack-announce-channel");
