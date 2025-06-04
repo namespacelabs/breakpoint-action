@@ -6789,6 +6789,9 @@ function getDownloadURL() {
             case "Linux":
                 os = "linux";
                 break;
+            case "Windows":
+                os = "windows";
+                break;
             default:
                 throw new Error(`Unsupported operating system: ${RUNNER_OS}`);
         }
