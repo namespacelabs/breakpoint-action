@@ -5,12 +5,12 @@ branding:
   icon: 'pause-circle'
   color: 'blue'
 inputs:
-  endpoint:
-    description: "The endpoint of a breakpoint rendezvous server."
+  mode:
+    description: "One of 'pause' or 'background'. 'pause' will pause your workflow until you tell it to continue (or duration is reached). 'background' will run in the background allowing you to connect at any time during your workflow"
     required: true
-    default: "rendezvous.namespace.so:5000"
+    default: "pause"
   duration:
-    description: "The initial breakpoint duration."
+    description: "The initial breakpoint duration. This input is ignored when mode is set to background"
     required: true
     default: "30m"
   authorized-users:
@@ -28,6 +28,11 @@ inputs:
   shell:
     description: "The path of the login shell."
     required: false
+  endpoint:
+    description: "The endpoint of a breakpoint rendezvous server."
+    required: true
+    default: "rendezvous.namespace.so:5000"
 runs:
   using: node20
   main: dist/main/index.js
+  post: dist/post/index.js

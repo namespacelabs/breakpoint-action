@@ -13,8 +13,9 @@
 		"format": "prettier --write '**/*.ts'",
 		"format-check": "prettier --check '**/*.ts'",
 		"lint": "eslint *.ts",
-		"build": "concurrently 'npm run build:main'",
+		"build": "concurrently 'npm run build:main' 'npm run build:post'",
 		"build:main": "ncc build main.ts --out dist/main",
+		"build:post": "ncc build post.ts --out dist/post",
 		"add": "git add dist/*"
 	},
 	"repository": "git+https://github.com/namespacelabs/breakpoint-action.git",
