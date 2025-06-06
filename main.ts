@@ -3,8 +3,9 @@ import * as exec from "@actions/exec";
 import * as tc from "@actions/tool-cache";
 import * as fs from "node:fs";
 import * as path from "node:path";
+import { getModeFromInput } from "./lib";
 
-const breakpointVersion = "0.0.21";
+const breakpointVersion = "0.0.23";
 
 interface WaitConfig {
 	endpoint: string;
@@ -56,11 +57,20 @@ async function installBreakpoint(): Promise<void> {
 
 async function runBreakpoint(): Promise<void> {
 	const configFile = tmpFile("config.json");
-	const configData = jsonifyInput();
+	const config = createConfiguration();
 
-	core.debug(`Configuration: ${configData}`);
+	const mode = getModeFromInput();
 
-	fs.writeFile(configFile, configData, (err) => {
+	core.debug(`Mode: ${mode}`);
+
+	if (mode === "background") {
+		core.info("Duration input is ignored when running in background mode");
+		config.duration = "10h";
+	}
+
+	core.debug(`Configuration: ${config}`);
+
+	fs.writeFile(configFile, JSON.stringify(config), (err) => {
 		if (err) {
 			core.setFailed(`Failed to write config file: ${err.message}`);
 			return;
@@ -68,7 +78,11 @@ async function runBreakpoint(): Promise<void> {
 	});
 
 	core.debug(new Date().toTimeString());
-	await exec.exec(`breakpoint wait --config=${configFile}`);
+	if (mode === "pause") {
+		await exec.exec(`breakpoint wait --config=${configFile}`);
+	} else {
+		await exec.exec(`breakpoint start --config=${configFile}`);
+	}
 	core.debug(new Date().toTimeString());
 }
 
@@ -105,7 +119,7 @@ async function getDownloadURL(): Promise<string> {
 	return `https://github.com/namespacelabs/breakpoint/releases/download/v${breakpointVersion}/breakpoint_${os}_${arch}.tar.gz`;
 }
 
-function jsonifyInput(): string {
+function createConfiguration(): WaitConfig {
 	const config: WaitConfig = {
 		endpoint: core.getInput("endpoint"),
 		duration: core.getInput("duration"),
@@ -126,7 +140,7 @@ function jsonifyInput(): string {
 	}
 
 	if (!authorized) {
-		throw new Error("Neither 'authorized-users' nor 'authorized-keys' is provded.");
+		throw new Error("Neither 'authorized-users' nor 'authorized-keys' is provided.");
 	}
 
 	const webhookDefFile: string = core.getInput("webhook-definition");
@@ -151,7 +165,7 @@ function jsonifyInput(): string {
 		config.slack_bot = slackBot;
 	}
 
-	return JSON.stringify(config);
+	return config;
 }
 
 function tmpFile(file: string): string {
