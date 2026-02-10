@@ -5,7 +5,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { getModeFromInput } from "./lib";
 
-const defaultBreakpointVersion = "0.0.23";
+const defaultBreakpointVersion = "0.0.24";
 
 function getBreakpointVersion(): string {
 	const override = process.env.BREAKPOINT_VERSION?.trim().replace(/^v/, "");

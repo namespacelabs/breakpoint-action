@@ -6777,7 +6777,7 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 
-const defaultBreakpointVersion = "0.0.23";
+const defaultBreakpointVersion = "0.0.24";
 function getBreakpointVersion() {
     var _a;
     const override = (_a = process.env.BREAKPOINT_VERSION) === null || _a === void 0 ? void 0 : _a.trim().replace(/^v/, "");
