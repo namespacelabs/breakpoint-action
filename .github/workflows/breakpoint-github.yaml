@@ -9,7 +9,7 @@ on:
         type: string
 
 env:
-  AUTHORIZED_USERS: hugosantos,n-g,htr
+  AUTHORIZED_USERS: hugosantos,n-g,htr,annervisser
 
 jobs:
   breakpoint:
