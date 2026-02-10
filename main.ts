@@ -5,7 +5,16 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { getModeFromInput } from "./lib";
 
-const breakpointVersion = "0.0.23";
+const defaultBreakpointVersion = "0.0.23";
+
+function getBreakpointVersion(): string {
+	const override = process.env.BREAKPOINT_VERSION;
+	if (override) {
+		core.info(`Using breakpoint version from BREAKPOINT_VERSION: ${override}`);
+		return override;
+	}
+	return defaultBreakpointVersion;
+}
 
 interface WaitConfig {
 	endpoint: string;
@@ -116,7 +125,8 @@ async function getDownloadURL(): Promise<string> {
 			throw new Error(`Unsupported operating system: ${RUNNER_OS}`);
 	}
 
-	return `https://github.com/namespacelabs/breakpoint/releases/download/v${breakpointVersion}/breakpoint_${os}_${arch}.tar.gz`;
+	const version = getBreakpointVersion();
+	return `https://github.com/namespacelabs/breakpoint/releases/download/v${version}/breakpoint_${os}_${arch}.tar.gz`;
 }
 
 function createConfiguration(): WaitConfig {
