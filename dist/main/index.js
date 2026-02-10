@@ -6730,7 +6730,15 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 
-const breakpointVersion = "0.0.23";
+const defaultBreakpointVersion = "0.0.23";
+function getBreakpointVersion() {
+    const override = process.env.BREAKPOINT_VERSION;
+    if (override) {
+        core.info(`Using breakpoint version from BREAKPOINT_VERSION: ${override}`);
+        return override;
+    }
+    return defaultBreakpointVersion;
+}
 class Webhook {
 }
 class SlackBot {
@@ -6817,7 +6825,8 @@ function getDownloadURL() {
             default:
                 throw new Error(`Unsupported operating system: ${RUNNER_OS}`);
         }
-        return `https://github.com/namespacelabs/breakpoint/releases/download/v${breakpointVersion}/breakpoint_${os}_${arch}.tar.gz`;
+        const version = getBreakpointVersion();
+        return `https://github.com/namespacelabs/breakpoint/releases/download/v${version}/breakpoint_${os}_${arch}.tar.gz`;
     });
 }
 function createConfiguration() {
