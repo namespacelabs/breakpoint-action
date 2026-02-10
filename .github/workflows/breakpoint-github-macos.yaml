@@ -2,13 +2,18 @@ name: Breakpoint test on GitHub/MacOS
 
 on:
   workflow_dispatch:
-    notify-slack:
-      description: "Post a notification for the breakpoint on Slack"
-      required: false
-      type: boolean
+    inputs:
+      notify-slack:
+        description: "Post a notification for the breakpoint on Slack"
+        required: false
+        type: boolean
+      breakpoint-version:
+        description: "Override the breakpoint binary version"
+        required: false
+        type: string
 
 env:
-  AUTHORIZED_USERS: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
+  AUTHORIZED_USERS: hugosantos,n-g,htr
 
 jobs:
   breakpoint-mac:
@@ -26,6 +31,7 @@ jobs:
         if: inputs.notify-slack
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+          BREAKPOINT_VERSION: ${{ inputs.breakpoint-version }}
         uses: ./
         with:
           duration: 5m
@@ -34,6 +40,8 @@ jobs:
 
       - name: Execute breakpoint
         if: !inputs.notify-slack
+        env:
+          BREAKPOINT_VERSION: ${{ inputs.breakpoint-version }}
         uses: ./
         with:
           duration: 5m

@@ -2,13 +2,14 @@ name: Breakpoint test on GitHub
 
 on:
   workflow_dispatch:
-    notify-slack:
-      description: "Post a notification for the breakpoint on Slack"
-      required: false
-      type: boolean
+    inputs:
+      breakpoint-version:
+        description: "Override the breakpoint binary version"
+        required: false
+        type: string
 
 env:
-  AUTHORIZED_USERS: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
+  AUTHORIZED_USERS: hugosantos,n-g,htr
 
 jobs:
   breakpoint:
@@ -24,6 +25,8 @@ jobs:
 
       - name: Execute breakpoint
         uses: ./
+        env:
+          BREAKPOINT_VERSION: ${{ inputs.breakpoint-version }}
         with:
           duration: 5m
           authorized-users: ${{ env.AUTHORIZED_USERS }}

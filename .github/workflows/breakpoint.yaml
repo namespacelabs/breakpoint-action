@@ -2,6 +2,11 @@ name: Breakpoint test
 
 on:
   workflow_dispatch:
+    inputs:
+      breakpoint-version:
+        description: "Override the breakpoint binary version"
+        required: false
+        type: string
   push:
     branches:
       - main
@@ -20,6 +25,8 @@ jobs:
 
       - name: Execute breakpoint
         uses: ./
+        env:
+          BREAKPOINT_VERSION: ${{ inputs.breakpoint-version }}
         with:
           duration: 2m
-          authorized-users: edganiukov,hugosantos,n-g,htr,nichtverstehen,gmichelo
+          authorized-users: hugosantos,n-g,htr
