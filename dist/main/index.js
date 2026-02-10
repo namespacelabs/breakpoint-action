@@ -6779,7 +6779,8 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 const defaultBreakpointVersion = "0.0.23";
 function getBreakpointVersion() {
-    const override = process.env.BREAKPOINT_VERSION;
+    var _a;
+    const override = (_a = process.env.BREAKPOINT_VERSION) === null || _a === void 0 ? void 0 : _a.trim().replace(/^v/, "");
     if (override) {
         core.info(`Using breakpoint version from BREAKPOINT_VERSION: ${override}`);
         return override;

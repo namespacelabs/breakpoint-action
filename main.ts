@@ -8,7 +8,7 @@ import { getModeFromInput } from "./lib";
 const defaultBreakpointVersion = "0.0.23";
 
 function getBreakpointVersion(): string {
-	const override = process.env.BREAKPOINT_VERSION;
+	const override = process.env.BREAKPOINT_VERSION?.trim().replace(/^v/, "");
 	if (override) {
 		core.info(`Using breakpoint version from BREAKPOINT_VERSION: ${override}`);
 		return override;
