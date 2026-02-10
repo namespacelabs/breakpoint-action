@@ -39,7 +39,7 @@ jobs:
           webhook-definition: ./.github/slack-notification.json
 
       - name: Execute breakpoint
-        if: !inputs.notify-slack
+        if: ${{!inputs.notify-slack}}
         env:
           BREAKPOINT_VERSION: ${{ inputs.breakpoint-version }}
         uses: ./
