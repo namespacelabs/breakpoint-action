@@ -4110,8 +4110,8 @@ var exec = __nccwpck_require__(514);
 
 function getModeFromInput() {
     const mode = core.getInput("mode");
-    if (mode !== "pause" && mode !== "background") {
-        throw new Error(`Invalid mode "${mode}" specified, must be one of "pause", "background"`);
+    if (mode !== "pause" && mode !== "background" && mode !== "pause-idle") {
+        throw new Error(`Invalid mode "${mode}" specified, must be one of "pause", "background", "pause-idle"`);
     }
     return mode;
 }
@@ -4129,6 +4129,37 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 
+const STATE_COMMENT_ID = "breakpoint_comment_id";
+const STATE_COMMENT_REPO = "breakpoint_comment_repo";
+function deletePRComment() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const commentId = core.getState(STATE_COMMENT_ID);
+        const repo = core.getState(STATE_COMMENT_REPO);
+        const token = core.getInput("github-token");
+        if (!commentId || !repo || !token) {
+            return;
+        }
+        try {
+            const res = yield fetch(`https://api.github.com/repos/${repo}/issues/comments/${commentId}`, {
+                method: "DELETE",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/vnd.github+json",
+                    "User-Agent": "breakpoint-action",
+                },
+            });
+            if (!res.ok && res.status !== 404) {
+                const text = yield res.text();
+                core.warning(`Failed to delete PR comment (${res.status}): ${text.slice(0, 200)}`);
+                return;
+            }
+            core.info(`Deleted PR comment ${commentId}`);
+        }
+        catch (err) {
+            core.warning(`Error deleting PR comment: ${err}`);
+        }
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -4143,6 +4174,8 @@ function run() {
             core.info("Error encountered while waiting for breakpoint to finish, it might've been stopped manually");
             core.debug(err);
         }
+        // Always try cleanup, regardless of mode or whether the action errored.
+        yield deletePRComment();
     });
 }
 run();

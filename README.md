@@ -78,6 +78,58 @@ When Breakpoint activates, it will output on a regular basis how much time left 
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
+### Pause with idle-aware timeout
+
+`mode: pause-idle` pauses the workflow until either (a) no SSH session has
+connected within `grace-period`, or (b) a session connected and then all
+sessions have been disconnected for longer than `idle-timeout`. This is useful
+when you want "long enough for a human to attach if they're around, no longer
+than necessary if they're not".
+
+```yaml
+- name: Pause with idle-aware timeout
+  if: failure()
+  uses: namespacelabs/breakpoint-action@v0
+  with:
+    mode: pause-idle
+    grace-period: 5m
+    idle-timeout: 20m
+    authorized-users: jack123, alice321
+```
+
+### Discovering the SSH endpoint outside the runner
+
+The action emits the SSH connection string (`Connect with: ssh -p ... runner@...`)
+to the step log, but GitHub buffers step logs until the step completes — which
+for `pause`-style modes means the endpoint is invisible until the breakpoint
+ends. To make the endpoint observable while the step is still active, the
+action also:
+
+- Sets a step output `endpoint`, e.g. `${{ steps.bp.outputs.endpoint }}`.
+- Emits a Check Run annotation via `::notice::`, visible in the run summary
+  and queryable through the REST API while the run is in progress.
+- Optionally posts a pull-request comment with the endpoint (and removes it on
+  exit). Useful for external CI watchers / AI assistants that follow PR events.
+
+```yaml
+- name: Pause on failure with PR notification
+  if: failure() && github.event_name == 'pull_request'
+  id: bp
+  uses: namespacelabs/breakpoint-action@v0
+  with:
+    mode: pause-idle
+    authorized-users: jack123, alice321
+    comment-on-pr: true
+    github-token: ${{ github.token }}
+    comment-marker: BREAKPOINT_OPEN
+    comment-extra-hint: |
+      Run inside the SSH session:
+      `docker exec -ti $(docker ps --filter name=my-sandbox -q | head -1) bash`
+```
+
+The PR comment uses the configurable `comment-marker` as an HTML comment on
+the first line, so other tooling can grep for it.
+
 ### Run in the background
 
 Breakpoint can also be started in the background to allow connecting at any point during the workflow.
@@ -123,11 +175,41 @@ This action offers inputs that you can use to configure `breakpoint` behavior:
 
   The default value is "30m".
 
-- `mode` - is the mode that breakpoint is started with. Either _pause_ (the default)
-  or _background_. When running in the background, Breakpoint won't block your workflow.
-  The duration input will have no effect when running in the background.
+- `mode` - is the mode that breakpoint is started with. Either _pause_ (the default),
+  _background_ or _pause-idle_. _pause_ blocks until duration is reached or the user
+  resumes. _background_ won't block your workflow (and the duration input is ignored).
+  _pause-idle_ blocks while there are active SSH connections, with a `grace-period`
+  for the first connection and an `idle-timeout` after the last one.
 
   The default value is "pause"
+
+- `grace-period` - (pause-idle only) how long to wait for the first SSH connection
+  before giving up. Accepts Go duration syntax (e.g. `5m`, `30s`).
+
+  The default value is "5m".
+
+- `idle-timeout` - (pause-idle only) how long with zero active SSH connections
+  before the breakpoint exits, after at least one session has connected.
+
+  The default value is "20m".
+
+- `comment-on-pr` - if `true`, post a pull-request comment when the SSH endpoint
+  is detected, and delete it on exit. Requires `github-token` with
+  `pull-requests: write` and a `pull_request` event context.
+
+  The default value is "false".
+
+- `github-token` - token used to post and delete the PR comment. Typically
+  `${{ github.token }}` or a PAT with `pull-requests:write`.
+
+- `comment-marker` - opaque HTML-comment marker placed on the first line of the
+  PR comment. Other tooling (CI watchers, AI assistants) can search the PR
+  comment list for this marker.
+
+  The default value is "BREAKPOINT_OPEN".
+
+- `comment-extra-hint` - optional extra Markdown appended to the PR comment
+  body. Useful for project-specific hints (e.g. how to enter a debug sandbox).
 
 - `authorized-users` - is the comma-separated list of GitHub users that would be
   allowed to SSH into a GitHub Runner. GitHub users would need to have their
@@ -163,3 +245,9 @@ This action offers inputs that you can use to configure `breakpoint` behavior:
 Note, that `authorized-users` and `authorized-keys` used to provided SSH access
 to a GitHub Runner. The action will fail if neither `authorized-users` nor
 `authorized-keys` is provided.
+
+## Outputs
+
+- `endpoint` - the SSH endpoint string emitted by breakpoint
+  (e.g. `ssh -p 40812 runner@rendezvous.namespace.so`), or empty if it was
+  not detected before the step finished.
