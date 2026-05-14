@@ -1,16 +1,22 @@
 name: 'Add a breakpoint to CI'
 description: 'Pause, debug with SSH and resume GitHub Actions'
-author: 'Namespace Labs'
+author: 'Namespace Labs (fork by Cozystack)'
 branding:
   icon: 'pause-circle'
   color: 'blue'
 inputs:
   mode:
-    description: "One of 'pause' or 'background'. 'pause' will pause your workflow until you tell it to continue (or duration is reached). 'background' will run in the background allowing you to connect at any time during your workflow"
+    description: >
+      One of 'pause', 'background', or 'pause-idle'. 'pause' pauses the workflow
+      until you resume it (or duration is reached). 'background' runs in the
+      background allowing you to connect at any time during your workflow.
+      'pause-idle' (cozystack extension) pauses for an initial grace period to
+      wait for the first SSH connection, then keeps the workflow paused while
+      any SSH session is active and exits after a configurable idle window.
     required: true
     default: "pause"
   duration:
-    description: "The initial breakpoint duration. This input is ignored when mode is set to background"
+    description: "The initial breakpoint duration. Ignored when mode is 'background' or 'pause-idle'."
     required: true
     default: "30m"
   authorized-users:
@@ -32,6 +38,52 @@ inputs:
     description: "The endpoint of a breakpoint rendezvous server."
     required: true
     default: "rendezvous.namespace.so:5000"
+
+  # cozystack extensions
+  grace-period:
+    description: >
+      (pause-idle only) How long to wait for the first SSH connection before
+      giving up. Accepts Go duration syntax (e.g. '20m', '30s').
+    required: false
+    default: "20m"
+  idle-timeout:
+    description: >
+      (pause-idle only) How long with zero active SSH connections before
+      the breakpoint exits, after at least one session has connected.
+      Accepts Go duration syntax.
+    required: false
+    default: "10m"
+  check-run-name:
+    description: >
+      If set, the action creates a separate GitHub Check Run with this name
+      when the SSH endpoint is detected, marks it as conclusion=failure with
+      the endpoint embedded in output.summary, and updates it to
+      conclusion=success (or check-run-conclusion-on-resume) when the
+      breakpoint exits. Gives a standard CI-failure signal that any tooling
+      can detect via `gh pr checks` without bespoke marker parsing. Leave
+      empty to disable.
+    required: false
+  check-run-summary-template:
+    description: >
+      Markdown template for the Check Run's output.summary while the
+      breakpoint is open. The placeholder '{endpoint}' is replaced with the
+      SSH connect string. Defaults to a minimal summary containing just the
+      endpoint in a code block.
+    required: false
+  check-run-conclusion-on-resume:
+    description: >
+      Conclusion to set on the Check Run when the breakpoint exits. One of
+      'success', 'neutral', 'skipped'.
+    required: false
+    default: "success"
+  github-token:
+    description: "Token used for Check Run API operations (requires checks:write). Typically the workflow's github.token."
+    required: false
+
+outputs:
+  endpoint:
+    description: "The SSH endpoint string emitted by breakpoint (e.g. 'ssh -p 40812 runner@rendezvous.namespace.so'). Empty if not detected."
+
 runs:
   using: node24
   main: dist/main/index.js

@@ -4110,8 +4110,8 @@ var exec = __nccwpck_require__(514);
 
 function getModeFromInput() {
     const mode = core.getInput("mode");
-    if (mode !== "pause" && mode !== "background") {
-        throw new Error(`Invalid mode "${mode}" specified, must be one of "pause", "background"`);
+    if (mode !== "pause" && mode !== "background" && mode !== "pause-idle") {
+        throw new Error(`Invalid mode "${mode}" specified, must be one of "pause", "background", "pause-idle"`);
     }
     return mode;
 }
@@ -4129,6 +4129,48 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 
+const STATE_CHECK_RUN_ID = "breakpoint_check_run_id";
+const STATE_CHECK_RUN_REPO = "breakpoint_check_run_repo";
+function resolveBreakpointCheckRun() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const checkRunId = core.getState(STATE_CHECK_RUN_ID);
+        const repo = core.getState(STATE_CHECK_RUN_REPO);
+        const token = core.getInput("github-token");
+        if (!checkRunId || !repo || !token) {
+            return;
+        }
+        const conclusion = core.getInput("check-run-conclusion-on-resume") || "success";
+        const body = {
+            status: "completed",
+            conclusion,
+            output: {
+                title: "SSH breakpoint resumed",
+                summary: `Breakpoint exited at ${new Date().toISOString()}.`,
+            },
+        };
+        try {
+            const res = yield fetch(`https://api.github.com/repos/${repo}/check-runs/${checkRunId}`, {
+                method: "PATCH",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    Accept: "application/vnd.github+json",
+                    "Content-Type": "application/json",
+                    "User-Agent": "breakpoint-action",
+                },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = yield res.text();
+                core.warning(`Failed to update Check Run ${checkRunId} (${res.status}): ${text.slice(0, 200)}`);
+                return;
+            }
+            core.info(`Updated Check Run ${checkRunId} -> conclusion=${conclusion}`);
+        }
+        catch (err) {
+            core.warning(`Error updating Check Run: ${err}`);
+        }
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -4143,6 +4185,9 @@ function run() {
             core.info("Error encountered while waiting for breakpoint to finish, it might've been stopped manually");
             core.debug(err);
         }
+        // Always try to resolve the breakpoint Check Run, regardless of mode or
+        // whether the action errored.
+        yield resolveBreakpointCheckRun();
     });
 }
 run();

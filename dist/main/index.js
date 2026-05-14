@@ -6755,8 +6755,8 @@ const external_node_path_namespaceObject = require("node:path");
 
 function getModeFromInput() {
     const mode = core.getInput("mode");
-    if (mode !== "pause" && mode !== "background") {
-        throw new Error(`Invalid mode "${mode}" specified, must be one of "pause", "background"`);
+    if (mode !== "pause" && mode !== "background" && mode !== "pause-idle") {
+        throw new Error(`Invalid mode "${mode}" specified, must be one of "pause", "background", "pause-idle"`);
     }
     return mode;
 }
@@ -6778,6 +6778,11 @@ var __awaiter = (undefined && undefined.__awaiter) || function (thisArg, _argume
 
 
 const defaultBreakpointVersion = "0.0.24";
+// Matches the "Connect with: ssh -p <PORT> <USER>@<HOST>" line emitted by
+// the breakpoint binary once the rendezvous tunnel is established.
+const sshLineRegex = /Connect with:\s*(ssh\s+-p\s+\d+\s+\S+@\S+)/;
+const STATE_CHECK_RUN_ID = "breakpoint_check_run_id";
+const STATE_CHECK_RUN_REPO = "breakpoint_check_run_repo";
 function getBreakpointVersion() {
     var _a;
     const override = (_a = process.env.BREAKPOINT_VERSION) === null || _a === void 0 ? void 0 : _a.trim().replace(/^v/, "");
@@ -6804,7 +6809,6 @@ function run() {
 }
 function installBreakpoint() {
     return __awaiter(this, void 0, void 0, function* () {
-        // Download the specific version of the tool, e.g. as a tarball.
         const toolURL = yield getDownloadURL();
         core.info(`Downloading: ${toolURL}`);
         const pathToTarball = yield tool_cache.downloadTool(toolURL, null, null, {
@@ -6812,39 +6816,278 @@ function installBreakpoint() {
             "User-Agent": "breakpoint-action",
             accept: "application/octet-stream",
         });
-        // Extract the tarball onto the runner.
         const pathToCLI = yield tool_cache.extractTar(pathToTarball);
-        // Expose the tool by adding it to the $PATH.
         core.addPath(pathToCLI);
     });
 }
+function readCheckRunContext() {
+    const name = core.getInput("check-run-name");
+    if (!name) {
+        return null;
+    }
+    const token = core.getInput("github-token");
+    if (!token) {
+        core.warning("check-run-name is set but no github-token provided; skipping Check Run signal.");
+        return null;
+    }
+    const repository = process.env.GITHUB_REPOSITORY;
+    if (!repository) {
+        core.warning("Missing GITHUB_REPOSITORY; skipping Check Run signal.");
+        return null;
+    }
+    const [owner, repo] = repository.split("/");
+    const headSha = resolveHeadSha();
+    if (!headSha) {
+        core.warning("Could not determine head SHA; skipping Check Run signal.");
+        return null;
+    }
+    return {
+        name,
+        summaryTemplate: core.getInput("check-run-summary-template") || "## SSH breakpoint open\n\n```\n{endpoint}\n```",
+        token,
+        owner,
+        repo,
+        headSha,
+    };
+}
+// In pull_request workflows, GITHUB_SHA is the merge commit. Check Runs need
+// the PR head SHA so they surface on the PR's Checks tab — pull it from the
+// event payload when present, fall back to GITHUB_SHA otherwise.
+function resolveHeadSha() {
+    var _a, _b;
+    const eventPath = process.env.GITHUB_EVENT_PATH;
+    if (eventPath) {
+        try {
+            const evt = JSON.parse(external_node_fs_namespaceObject.readFileSync(eventPath, "utf8"));
+            const prHead = (_b = (_a = evt === null || evt === void 0 ? void 0 : evt.pull_request) === null || _a === void 0 ? void 0 : _a.head) === null || _b === void 0 ? void 0 : _b.sha;
+            if (prHead)
+                return prHead;
+        }
+        catch (err) {
+            core.debug(`Failed to read event payload: ${err}`);
+        }
+    }
+    return process.env.GITHUB_SHA || null;
+}
+function createBreakpointCheckRun(ctx, endpoint) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const summary = ctx.summaryTemplate.split("{endpoint}").join(endpoint);
+        const body = {
+            name: ctx.name,
+            head_sha: ctx.headSha,
+            status: "completed",
+            conclusion: "failure",
+            output: {
+                title: "SSH breakpoint open — paused for debug",
+                summary,
+            },
+        };
+        try {
+            const res = yield fetch(`https://api.github.com/repos/${ctx.owner}/${ctx.repo}/check-runs`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${ctx.token}`,
+                    Accept: "application/vnd.github+json",
+                    "Content-Type": "application/json",
+                    "User-Agent": "breakpoint-action",
+                },
+                body: JSON.stringify(body),
+            });
+            if (!res.ok) {
+                const text = yield res.text();
+                core.warning(`Failed to create Check Run (${res.status}): ${text.slice(0, 200)}`);
+                return null;
+            }
+            const json = (yield res.json());
+            core.info(`Created Check Run ${json.id} ("${ctx.name}") with conclusion=failure`);
+            return json.id;
+        }
+        catch (err) {
+            core.warning(`Error creating Check Run: ${err}`);
+            return null;
+        }
+    });
+}
+function makeEndpointDetector(checkRunCtx) {
+    let captured = "";
+    let done = false;
+    const feed = (text) => __awaiter(this, void 0, void 0, function* () {
+        if (done || !text)
+            return;
+        captured += text;
+        const match = captured.match(sshLineRegex);
+        if (!match)
+            return;
+        done = true;
+        const endpoint = match[1].trim();
+        core.setOutput("endpoint", endpoint);
+        core.notice(endpoint, { title: "SSH breakpoint endpoint" });
+        core.info(`Detected SSH endpoint: ${endpoint}`);
+        if (checkRunCtx) {
+            const id = yield createBreakpointCheckRun(checkRunCtx, endpoint);
+            if (id !== null) {
+                core.saveState(STATE_CHECK_RUN_ID, String(id));
+                core.saveState(STATE_CHECK_RUN_REPO, `${checkRunCtx.owner}/${checkRunCtx.repo}`);
+            }
+        }
+    });
+    const execOpts = {
+        listeners: {
+            stdout: (data) => {
+                const text = data.toString();
+                process.stdout.write(text);
+                void feed(text);
+            },
+        },
+        // We do our own writing to stdout so we don't double up.
+        silent: true,
+    };
+    return { feed, execOpts };
+}
+// -------------------- Mode dispatch --------------------
 function runBreakpoint() {
     return __awaiter(this, void 0, void 0, function* () {
         const configFile = tmpFile("config.json");
         const config = createConfiguration();
         const mode = getModeFromInput();
         core.debug(`Mode: ${mode}`);
-        if (mode === "background") {
-            core.info("Duration input is ignored when running in background mode");
+        if (mode === "background" || mode === "pause-idle") {
+            // Duration is managed differently in these modes.
             config.duration = "10h";
         }
-        core.debug(`Configuration: ${config}`);
-        external_node_fs_namespaceObject.writeFile(configFile, JSON.stringify(config), (err) => {
-            if (err) {
-                core.setFailed(`Failed to write config file: ${err.message}`);
-                return;
-            }
-        });
+        core.debug(`Configuration: ${JSON.stringify(config)}`);
+        // Write the file synchronously — the original async version had a race
+        // against the immediately-following exec.
+        external_node_fs_namespaceObject.writeFileSync(configFile, JSON.stringify(config));
+        const checkRunCtx = readCheckRunContext();
+        const detector = makeEndpointDetector(checkRunCtx);
         core.debug(new Date().toTimeString());
-        if (mode === "pause") {
-            yield exec.exec(`breakpoint wait --config=${configFile}`);
-        }
-        else {
-            yield exec.exec(`breakpoint start --config=${configFile}`);
+        switch (mode) {
+            case "pause":
+                yield exec.exec(`breakpoint wait --config=${configFile}`, [], detector.execOpts);
+                break;
+            case "background":
+                yield exec.exec(`breakpoint start --config=${configFile}`, [], detector.execOpts);
+                break;
+            case "pause-idle":
+                yield runPauseIdle(configFile, detector);
+                break;
         }
         core.debug(new Date().toTimeString());
     });
 }
+// -------------------- pause-idle implementation --------------------
+function parseDurationToMs(input, fallbackMs) {
+    const m = input.match(/^(\d+)\s*(ms|s|m|h)?$/);
+    if (!m)
+        return fallbackMs;
+    const n = parseInt(m[1], 10);
+    const unit = m[2] || "s";
+    switch (unit) {
+        case "ms":
+            return n;
+        case "s":
+            return n * 1000;
+        case "m":
+            return n * 60 * 1000;
+        case "h":
+            return n * 60 * 60 * 1000;
+    }
+    return fallbackMs;
+}
+// pollStatus runs `breakpoint status`, feeds its output to the endpoint
+// detector (so we surface the SSH endpoint on the first poll where it appears
+// — `breakpoint start` itself does not print it), and returns the number of
+// currently-active SSH connections. Returns null when the daemon is no longer
+// reachable.
+function pollStatus(detector) {
+    return __awaiter(this, void 0, void 0, function* () {
+        let output = "";
+        const exitCode = yield exec.exec("breakpoint", ["status"], {
+            listeners: {
+                stdout: (data) => {
+                    output += data.toString();
+                },
+                stderr: () => {
+                    /* swallow */
+                },
+            },
+            ignoreReturnCode: true,
+            silent: true,
+        });
+        if (exitCode !== 0) {
+            return null;
+        }
+        yield detector.feed(output);
+        const match = output.match(/Active connections:\s*(\d+)/);
+        return match ? parseInt(match[1], 10) : 0;
+    });
+}
+function sleep(ms) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    });
+}
+function runPauseIdle(configFile, detector) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Start the daemon. `breakpoint start` returns once the rendezvous tunnel
+        // is up; the SSH endpoint is then printed by `breakpoint status` (which we
+        // poll below), not by `start` itself.
+        yield exec.exec(`breakpoint start --config=${configFile}`, [], detector.execOpts);
+        const graceMs = parseDurationToMs(core.getInput("grace-period") || "20m", 20 * 60 * 1000);
+        const idleMs = parseDurationToMs(core.getInput("idle-timeout") || "10m", 10 * 60 * 1000);
+        const pollMs = 5000;
+        core.info(`pause-idle: grace=${graceMs}ms, idle-timeout=${idleMs}ms (waiting for first SSH connection)`);
+        const graceDeadline = Date.now() + graceMs;
+        let everConnected = false;
+        while (Date.now() < graceDeadline) {
+            const conns = yield pollStatus(detector);
+            if (conns === null) {
+                core.info("breakpoint daemon is no longer reachable; exiting pause-idle");
+                return;
+            }
+            if (conns > 0) {
+                everConnected = true;
+                core.info(`pause-idle: SSH session connected (${conns} active), entering idle-aware wait`);
+                break;
+            }
+            yield sleep(pollMs);
+        }
+        if (!everConnected) {
+            core.info("pause-idle: no SSH connection during grace period, stopping breakpoint");
+            yield stopBreakpoint();
+            return;
+        }
+        let lastSeenConnectedAt = Date.now();
+        while (true) {
+            const conns = yield pollStatus(detector);
+            if (conns === null) {
+                core.info("breakpoint daemon stopped externally; exiting pause-idle");
+                return;
+            }
+            if (conns > 0) {
+                lastSeenConnectedAt = Date.now();
+            }
+            else if (Date.now() - lastSeenConnectedAt > idleMs) {
+                core.info(`pause-idle: idle for ${idleMs}ms with no connections, stopping breakpoint`);
+                yield stopBreakpoint();
+                return;
+            }
+            yield sleep(pollMs);
+        }
+    });
+}
+function stopBreakpoint() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            yield exec.exec("breakpoint", ["resume"], { ignoreReturnCode: true, silent: true });
+        }
+        catch (err) {
+            core.debug(`Error stopping breakpoint: ${err}`);
+        }
+    });
+}
+// -------------------- Tool download --------------------
 function getDownloadURL() {
     return __awaiter(this, void 0, void 0, function* () {
         const { RUNNER_ARCH, RUNNER_OS } = process.env;
